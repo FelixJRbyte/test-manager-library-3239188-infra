@@ -1,50 +1,55 @@
 # test-manager-library-3239188-infra
 
-> **Prueba técnica · Ficha ADSO 3239188**
-> Horario: **jueves 5 de noviembre de 2026, de 7:00 p. m. a 11:00 p. m.** (hora Colombia). Entrega a las **11:00 p. m.**
+Infraestructura de *Manager Library*: contenedores, red, volúmenes y el motor de base de datos **vacío**.
+Prueba técnica SDD, ficha ADSO 3239188. El spec y las decisiones están en el repo `docs` (`laravel-react/`).
 
-Este repositorio es la **infraestructura** de *Manager Library*: contenedores, red, volúmenes y el motor de base de datos vacío. **Empieza vacío a propósito**: se construye en el fork de cada aprendiz.
+## Estado
 
-## Instrucciones
-
-Cada aprendiz debe **crear el fork** de los seis repositorios del proyecto y **resolver el proyecto
-con el spec planteado**.
-
-1. Hacer fork, a su cuenta de GitHub, de cada repositorio de la tabla del final.
-2. Leer el spec en [`test-manager-library-3239188-docs`](https://github.com/code-sena/test-manager-library-3239188-docs).
-   Se entrega en dos versiones: `spec-python/` y `spec-.net/`.
-3. Desarrollar en los forks.
-
-## El reto se desarrolla con React y PHP (Laravel)
-
-El spec está escrito para Python y para .NET, pero el reto **no** se hace en esos lenguajes:
-
-| Capa | Tecnología del reto |
+| Pieza | Estado |
 |---|---|
-| Frontend | React |
-| Backend | PHP con Laravel |
+| `db` (PostgreSQL 16, vacío, volumen, red, healthcheck) | implementado, **no ejecutado** (no hay Docker en la máquina de desarrollo) |
+| `api` (Laravel) | pendiente: se añade cuando `api/` tenga `Dockerfile` (T0) |
+| `app` (React) | pendiente: se añade con el perfil `web` cuando `app/` tenga `Dockerfile` (T8) |
 
-Lo que el spec define sobre el negocio —historias, criterios de aceptación, reglas, contrato de la
-API, modelo de datos— se respeta. Lo que define sobre la tecnología se traduce a React y Laravel.
+Hasta que el servicio `api` exista, `docker compose up` solo levanta el motor.
 
-## La prueba no consiste en escribir el código
+## Cómo levantar
 
-El propósito principal es ver la **capacidad de desempeño con SDD** (*Spec-Driven Development*,
-desarrollo guiado por especificación): cómo se lee, se interpreta y se aplica una especificación
-para llevarla a un stack distinto. El código es el medio, no el fin.
+```bash
+cp .env.example .env     # en PowerShell: Copy-Item .env.example .env
+# editar .env y rellenar los valores vacíos (ver tabla)
+docker compose up -d
+docker compose ps        # db debe quedar "healthy"
+```
 
-## Entrega
+Si falta una variable obligatoria, el compose no arranca y dice cuál (`defina POSTGRES_PASSWORD en .env`).
 
-Cuenta lo que quede **subido a los forks antes de las 11:00 p. m.** Lo que llegue después no se revisa.
-No hay prórroga: suban avances parciales con commits pequeños durante la prueba.
+## Variables de entorno (`.env.example`)
 
-## Los seis repositorios
+| Variable | Obligatoria | Para qué |
+|---|---|---|
+| `POSTGRES_DB`, `POSTGRES_USER` | sí | Base y usuario del motor |
+| `POSTGRES_PASSWORD` | sí | Clave del motor. Sin valor por defecto |
+| `APP_KEY` | sí (con `api`) | Clave de Laravel: `php artisan key:generate --show` |
+| `APP_TIMEZONE` | sí (con `api`) | `UTC` |
+| `JWT_SECRET` | sí (con `api`) | Firma de los JWT; mínimo 32 caracteres aleatorios |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | sí (con `api`) | Admin inicial, creado por `php artisan library:ensure-admin` |
+| `CORS_ORIGIN` | sí (con `api`) | Único origen permitido: el del frontend |
+| `COVERS_DIR` | no | Carpeta de portadas |
+| `API_PORT` | no | Puerto publicado de la API (8000) |
 
-| Repositorio | Qué va ahí |
-|---|---|
-| [`test-manager-library-3239188-docs`](https://github.com/code-sena/test-manager-library-3239188-docs) | El spec: `spec-python/` y `spec-.net/` |
-| [`test-manager-library-3239188-api`](https://github.com/code-sena/test-manager-library-3239188-api) | Backend en PHP (Laravel) |
-| [`test-manager-library-3239188-app`](https://github.com/code-sena/test-manager-library-3239188-app) | Frontend en React |
-| [`test-manager-library-3239188-page`](https://github.com/code-sena/test-manager-library-3239188-page) | Sitio público estático de presentación |
-| [`test-manager-library-3239188-infra`](https://github.com/code-sena/test-manager-library-3239188-infra) | Contenedores, red, volúmenes y motor de base de datos vacío |
-| [`test-manager-library-3239188-tool`](https://github.com/code-sena/test-manager-library-3239188-tool) | Utilidades: sembrador de datos de demostración |
+El `.env` real está en `.gitignore`. Solo se versiona `.env.example`, sin secretos (Art. IX).
+
+## Decisiones relevantes
+
+- **La base arranca sin tablas (RNF-5, Art. V, ADR-001).** Este repo no contiene `CREATE TABLE` ni scripts en `docker-entrypoint-initdb.d`.
+  Todo el DDL, incluida la creación del esquema `library` y las cinco categorías, vive en las migraciones de `api`.
+- **El servidor corre en UTC** (`TZ` y `PGTZ`), como pide `data-model.md`.
+- **Compruebe que no hay DDL aquí:** `grep -ri "create table" .` no debe devolver nada (el README no cuenta).
+- **Laravel no usa `DATABASE_URL`:** el compose del servicio `api` construirá `DB_HOST`, `DB_DATABASE`, etc. a partir de las variables `POSTGRES_*`.
+
+## Reiniciar desde cero
+
+```bash
+docker compose down -v   # borra el volumen library_pgdata: se pierden todos los datos
+```
