@@ -1,0 +1,17 @@
+# Secretos y configuración local (Art. IX): nunca se versionan
+.env
+.env.*
+!.env.example
+opencode.json
+.opencode/
+
+# Variantes locales de compose y datos del motor
+docker-compose.override.yml
+pgdata/
+
+# Registros y basura del editor o del sistema
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
