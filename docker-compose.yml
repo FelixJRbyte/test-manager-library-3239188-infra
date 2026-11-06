@@ -1,0 +1,29 @@
+name: manager-library
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB en .env}
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD en .env}
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - library_pgdata:/var/lib/postgresql/data
+    networks:
+      - library_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+networks:
+  library_net:
+    name: library_net
+
+volumes:
+  library_pgdata:
+    name: library_pgdata
