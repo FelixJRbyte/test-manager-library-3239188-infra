@@ -20,6 +20,64 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build:
+      context: ${API_CONTEXT:-../test-manager-library-3239188-api}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: "Manager Library"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?defina APP_KEY en .env}
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:?defina POSTGRES_DB en .env}
+      DB_USERNAME: ${POSTGRES_USER:?defina POSTGRES_USER en .env}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD en .env}
+      DB_SEARCH_PATH: library,public
+      SESSION_DRIVER: array
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      LOG_CHANNEL: stderr
+      BCRYPT_ROUNDS: 12
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET en .env}
+      JWT_TTL_SECONDS: 28800
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?defina ADMIN_USERNAME en .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD en .env}
+      CORS_ORIGIN: ${CORS_ORIGIN:?defina CORS_ORIGIN en .env}
+      COVERS_DIR: ${COVERS_DIR:-storage/app/covers}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - library_covers:/var/www/html/storage/app/covers
+    networks:
+      - library_net
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["web"]
+    build:
+      context: ${APP_CONTEXT:-../test-manager-library-3239188-app}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-5173}:80"
+    networks:
+      - library_net
+
 networks:
   library_net:
     name: library_net
@@ -27,3 +85,5 @@ networks:
 volumes:
   library_pgdata:
     name: library_pgdata
+  library_covers:
+    name: library_covers

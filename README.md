@@ -8,10 +8,10 @@ Prueba técnica SDD, ficha ADSO 3239188. El spec y las decisiones están en el r
 | Pieza | Estado |
 |---|---|
 | `db` (PostgreSQL 16, vacío, volumen, red, healthcheck) | implementado, **no ejecutado** (no hay Docker en la máquina de desarrollo) |
-| `api` (Laravel) | pendiente: se añade cuando `api/` tenga `Dockerfile` (T0) |
-| `app` (React) | pendiente: se añade con el perfil `web` cuando `app/` tenga `Dockerfile` (T8) |
+| `api` (Laravel, ejecuta `migrate --force` y `library:ensure-admin` al arrancar) | implementado, **no ejecutado** |
+| `app` (React, perfil `web`) | declarado bajo `profiles: ["web"]`; se activa en T8 cuando `app/` tenga `Dockerfile` |
 
-Hasta que el servicio `api` exista, `docker compose up` solo levanta el motor.
+`docker compose up -d` levanta `db` y `api` con un solo comando (RNF-5).
 
 ## Cómo levantar
 
